@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
+<title>像素世界</title>
+<style>
+@font-face{font-family:'M';src:url('M.woff2') format('woff2');font-display:swap}
+*{margin:0;padding:0;box-sizing:border-box;touch-action:none;-webkit-user-select:none;user-select:none;font-family:'M',sans-serif}
+html,body{width:100%;height:100%;overflow:hidden;background:#d4eaf7}
+#gc{position:absolute;top:0;left:0;width:100vw;height:100vh;transform-origin:center center;overflow:hidden}
+@media(orientation:portrait){#gc{width:100vh;height:100vw;top:50%;left:50%;transform:translate(-50%,-50%) rotate(90deg)}}
+#coords{position:absolute;top:15px;left:15px;color:#fff;font-size:14px;text-shadow:0 0 2px #000;z-index:20;background:rgba(0,0,0,.5);padding:1px 10px;border-radius:2px;pointer-events:none;line-height:1.6}
+#crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:18px;height:18px;pointer-events:none;z-index:10}
+#crosshair::before,#crosshair::after{content:'';position:absolute;background:#fff}
+#crosshair::before{width:2px;height:100%;left:50%;transform:translateX(-50%)}
+#crosshair::after{width:100%;height:2px;top:50%;transform:translateY(-50%)}
+#joy-area{position:absolute;left:0;bottom:0;width:35%;height:50%;z-index:15}
+#joy{position:absolute;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.2);border:3px solid rgba(255,255,255,.4);display:none;transform:translate(-50%,-50%)}
+#joy-stick{position:absolute;top:50%;left:50%;width:45px;height:45px;border-radius:50%;background:rgba(255,255,255,.6);transform:translate(-50%,-50%)}
+#look-area{position:absolute;left:0;top:0;width:100%;height:100%;z-index:5}
+.g-btn{position:absolute;border:3px solid rgba(255,255,255,.5);color:#fff;font-weight:bold;display:flex;align-items:center;justify-content:center;z-index:25;background:rgba(0,0,0,.3);touch-action:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#btn-settings{position:absolute;top:0;left:50%;transform:translateX(-50%);width:27px;height:27px;background:url(ui/set.png) no-repeat center;background-size:contain;border:none;z-index:25}
+#btn-fly-toggle{position:absolute;top:50px;left:50%;transform:translateX(-50%);width:44px;height:44px;background-size:contain;background-repeat:no-repeat;background-position:center;border:2px solid rgba(255,255,255,.6);border-radius:50%;background-color:rgba(0,0,0,.3);z-index:25}
+#btn-jump{right:calc(25% - 37px);top:32%;width:74px;height:74px;background-size:contain;background-repeat:no-repeat;background-position:center;border-radius:0}
+#btn-sneak{right:calc(25% - 37px);top:58%;width:74px;height:74px;background-size:contain;background-repeat:no-repeat;background-position:center;border-radius:0}
+#btn-break{right:90px;bottom:20px;width:65px;height:65px;background-size:contain;background-repeat:no-repeat;background-position:center;border-radius:0;border-color:transparent;background-color:transparent;background-image:url(ui/attack.png)}
+#btn-place{right:20px;bottom:20px;width:65px;height:65px;background-size:contain;background-repeat:no-repeat;background-position:center;border-radius:0;border-color:transparent;background-color:transparent;background-image:url(ui/place.png)}
+#btn-inventory{top:15px;right:200px;width:70px;height:36px;border-radius:18px;background:rgba(103,58,183,.7);z-index:25;font-size:14px}
+#bname{position:absolute;bottom:60px;left:50%;transform:translateX(-50%);color:#fff;font-size:14px;text-shadow:0 0 2px #000;z-index:31;background:rgba(0,0,0,.5);padding:2px 8px;border-radius:2px;pointer-events:none}
+#hotbar{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);display:flex;gap:0;z-index:30}
+.slot{width:40px;height:40px;background:url(ui/hotbar.png) no-repeat center;background-size:100% 100%;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
+.slot.active{background:url(ui/hotbar_y.png) no-repeat center;background-size:100% 100%}
+.slot.selected-source{background:url(ui/hotbar_y.png) no-repeat center;background-size:100% 100%}
+.slot-color{width:28px;height:28px;image-rendering:pixelated;background-size:cover;background-repeat:no-repeat;z-index:1}
+.slot .slot-highlight{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:none;z-index:2}
+.slot.active .slot-highlight{display:block}
+.slot.selected-source .slot-highlight{display:block}
+#loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:16px;z-index:50;text-align:center;background:rgba(0,0,0,.75);padding:28px 48px;border-radius:2px;line-height:1.8;min-width:240px;display:none}
+#loading-text{margin-bottom:12px}
+.pb{width:100%;height:8px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden}
+.pf{height:100%;width:0%;background:#4CAF50;border-radius:2px;transition:width .2s}
+#lp{margin-top:8px;font-size:14px;opacity:.8}
+#inv-panel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(139,139,139,.92);border:3px solid #555;border-radius:2px;padding:16px;z-index:40;display:none}
+#inv-title{color:#fff;font-size:14px;text-shadow:0 0 2px #000;margin-bottom:10px;text-align:center}
+#inv-grid{display:grid;grid-template-columns:repeat(8,38px);grid-template-rows:repeat(3,38px);gap:5px}
+.inv-slot{width:38px;height:38px;border:2px solid #555;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;cursor:pointer}
+#main-menu{position:absolute;top:0;left:0;width:100%;height:100%;z-index:100;background:linear-gradient(135deg,rgba(180,210,240,.94),rgba(140,190,230,.94));display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;backdrop-filter:blur(6px);transition:opacity .4s}
+#main-menu h1{font-size:48px;margin-bottom:30px;text-shadow:0 0 20px rgba(100,150,200,.4);letter-spacing:4px;font-weight:300;color:#3a6a9a}
+#main-menu .m-btn{background:rgba(255,255,255,.3);border:2px solid rgba(255,255,255,.5);color:#3a6a9a;padding:14px 48px;margin:10px;font-size:22px;border-radius:12px;cursor:pointer;transition:all .25s;min-width:220px;letter-spacing:2px;font-weight:500;backdrop-filter:blur(4px);touch-action:manipulation;display:flex;align-items:center;justify-content:center;gap:10px}
+#main-menu .m-btn:hover,#main-menu .m-btn:active{background:rgba(255,255,255,.5);border-color:rgba(255,255,255,.8);transform:scale(1.03);box-shadow:0 8px 25px rgba(100,150,200,.3)}
+#main-menu .m-btn svg{width:28px;height:28px;flex-shrink:0}
+#main-menu .m-btn.small{font-size:16px;padding:10px 32px;min-width:140px;margin-top:20px;background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.3);color:#5a8aba}
+#main-menu .m-btn.small:hover{background:rgba(255,255,255,.4)}
+#main-menu .m-btn.disabled{opacity:.4;pointer-events:none;filter:grayscale(.6)}
+#main-menu .ver{position:absolute;bottom:20px;right:30px;font-size:14px;opacity:.5;color:#5a8aba}
+#set-panel{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(20,20,30,.97);display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;backdrop-filter:blur(12px);z-index:110;padding:20px}
+#set-panel h2{font-size:32px;margin-bottom:30px;font-weight:300;letter-spacing:2px}
+#set-panel .s-row{margin:16px 0;display:flex;align-items:center;gap:18px;font-size:18px;width:100%;max-width:360px;justify-content:center}
+#set-panel .s-row label{min-width:70px}
+#set-panel input[type=range]{width:200px;height:6px;background:rgba(255,255,255,.2);border-radius:10px;-webkit-appearance:none;appearance:none;outline:none;flex-shrink:1}
+#set-panel input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:9px;height:16px;border:none;background:url(ui/input.png) no-repeat center;cursor:pointer}
+#set-panel .v-d{font-weight:bold;color:#FFEB3B;min-width:50px;text-align:center;font-size:20px}
+#set-panel .back-btn{margin-top:32px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.2);color:#fff;padding:12px 44px;font-size:18px;border-radius:2px;cursor:pointer;transition:.2s;touch-action:manipulation}
+#set-panel .back-btn:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4)}
+#gc .gui{display:none}
+#gc.active .gui{display:block}
+</style></head><body>
+<div id="gc"><div class="gui"><div id="coords">0 0 0</div><div id="crosshair"></div><div id="look-area"></div><div id="joy-area"><div id="joy"><div id="joy-stick"></div></div></div><div class="g-btn" id="btn-inventory">背包</div><div id="btn-settings"></div><div class="g-btn" id="btn-fly-toggle" style="background-image:url(ui/canfly.png)"></div><div class="g-btn" id="btn-jump" style="background-image:url(ui/jump.png);border-color:transparent;background-color:transparent"></div><div class="g-btn" id="btn-sneak" style="background-image:url(ui/sneak.png);border-color:transparent;background-color:transparent"></div><div class="g-btn" id="btn-break" style="background-image:url(ui/attack.png);border-color:transparent;background-color:transparent;background-size:contain;background-repeat:no-repeat;background-position:center"></div><div class="g-btn" id="btn-place" style="background-image:url(ui/place.png);border-color:transparent;background-color:transparent;background-size:contain;background-repeat:no-repeat;background-position:center"></div><div id="bname">草方块</div><div id="hotbar"></div><div id="inv-panel"><div id="inv-title">背包</div><div id="inv-grid"></div></div></div><div id="loading"><div id="loading-text">生成地形...</div><div class="pb"><div class="pf" id="pf"></div></div><div id="lp">0%</div></div></div>
+<div id="main-menu"><h1>像素世界</h1><button class="m-btn" id="btn-infinite"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"><path fill="#3a6a9a" d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2m6.93 6h-2.95a15.7 15.7 0 0 0-1.38-3.56A8.03 8.03 0 0 1 18.92 8M12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96M4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56A8 8 0 0 1 5.08 16m2.95-8H5.08a8 8 0 0 1 4.33-3.56A15.7 15.7 0 0 0 8.03 8M12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96M14.34 14H9.66c-.09-.66-.16-1.32-.16-2s.07-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2m.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56M16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2z"/></svg>无限</button><button class="m-btn" id="btn-flat"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 1024 1024"><path fill="#3a6a9a" d="M507.6 598.3c-9.6 0-19-3.5-26.7-9.8L116.5 375.1c-2.6-1.6-5-3.6-6.9-5.6-8.4-9.3-12.8-21.6-12.7-33.6s4.6-24.3 13.1-33.4c2.1-2.3 5-4.5 7.7-6.1L488.9 94.7c7.8-6.3 17.1-9.7 26.4-9.8 9.2-.2 18.6 3 26.4 9.1l364.4 186.6c2.9 1.7 6 3.9 8.3 6.4 8.4 9.3 12.8 21.6 12.7 33.6s-4.6 24.2-13.1 33.4c-1.8 1.9-4 3.8-6.4 5.3L535.3 587.8c-7.7 6.7-17.7 10.5-27.7 10.5M516 154 180.8 334.5l322.5 188.9 338.4-203.9Zm-10.9 616.4c-9.6.1-19-3.4-26.7-9.7L114.1 547.4c-7.2-4.3-12.3-11.5-14.6-19.2-2.1-7.8-1.6-16.7 2.2-24.5l.2-.6v-.1c4-7.7 10.8-13.3 18.1-15.7 7.4-2.3 15.9-1.4 23.2 2.6l361.8 212 370-227.2c7.2-4.2 15.7-5.2 23.1-3.1 7.3 2.2 14.2 7.8 18.4 15.4 3.9 7.8 4.9 16.9 2.9 24.9-2.1 7.8-7.2 15.2-14.4 19.7L532.7 760.1c-7.8 6.7-17.6 10.4-27.6 10.3m0 168.8c-9.6 0-19-3.5-26.7-9.8L114.1 716c-7.2-4.3-12.3-11.4-14.6-19.1-2.1-7.8-1.5-16.8 2.2-24.6l.2-.6c4-7.7 10.8-13.3 18.1-15.7 7.4-2.3 15.9-1.5 23.2 2.6L505 870.5l370-226.9c7.1-4.4 15.6-5.4 23-3.3 7.4 2.2 14.3 7.8 18.5 15.4 3.9 7.8 4.9 16.9 2.9 24.7-2.1 8-7.2 15.3-14.4 19.8L532.7 928.7c-7.7 6.7-17.6 10.5-27.6 10.5"/></svg>超平坦</button><button class="m-btn small" id="btn-settings-main">设置</button><div class="ver">v0.1-beta</div></div>
+<div id="set-panel"><h2>设置</h2><div class="s-row"><label>亮度</label><input type="range" id="bs" min="40" max="120" step="5" value="80"><span class="v-d" id="bd">80%</span></div><div class="s-row"><label>视角</label><input type="range" id="fs" min="20" max="110" step="5" value="100"><span class="v-d" id="fd">100%</span></div><div class="s-row"><label>渲染距离</label><input type="range" id="rd" min="2" max="8" step="1" value="4"><span class="v-d" id="rdd">4</span></div><button class="back-btn" id="btn-set-back">返回</button></div>
+<link rel="stylesheet" href="A.css">
+<script src="MM.js"></script>
+<script src="A.js"></script>
+<script src="B.js"></script>
+<script src="C.js"></script>
+</body>
+</html>
